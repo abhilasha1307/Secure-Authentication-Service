@@ -1,5 +1,7 @@
 package com.abhilasha.auth.controller;
 
+import com.abhilasha.auth.controller.dto.LoginRequest;
+import com.abhilasha.auth.controller.dto.LoginResponse;
 import com.abhilasha.auth.controller.dto.RegisterRequest;
 import com.abhilasha.auth.controller.dto.RegisterResponse;
 import com.abhilasha.auth.domain.User;
@@ -34,4 +36,17 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new RegisterResponse(user.getId(), user.getEmail()));
     }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(
+            @Valid @RequestBody LoginRequest request
+    ) {
+        String token = authService.login(
+                request.getEmail(),
+                request.getPassword()
+        );
+
+        return ResponseEntity.ok(new LoginResponse(token));
+    }
+
 }
