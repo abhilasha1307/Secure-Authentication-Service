@@ -1,11 +1,12 @@
 package com.abhilasha.auth.controller;
 
-import com.abhilasha.auth.controller.dto.LoginRequest;
-import com.abhilasha.auth.controller.dto.LoginResponse;
-import com.abhilasha.auth.controller.dto.RegisterRequest;
-import com.abhilasha.auth.controller.dto.RegisterResponse;
+import com.abhilasha.auth.controller.dto.*;
+import com.abhilasha.auth.domain.RefreshToken;
 import com.abhilasha.auth.domain.User;
+import com.abhilasha.auth.security.JwtUtil;
 import com.abhilasha.auth.service.AuthService;
+import com.abhilasha.auth.service.RefreshTokenService;
+import io.jsonwebtoken.Jwt;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,9 +20,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final RefreshTokenService refreshTokenService;
+    private final JwtUtil jwtUtil;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, RefreshTokenService refreshTokenService, JwtUtil jwtUtil) {
         this.authService = authService;
+        this.refreshTokenService = refreshTokenService;
+        this.jwtUtil = jwtUtil;
     }
 
     @PostMapping("/register")
@@ -39,14 +44,30 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(
-            @Valid @RequestBody LoginRequest request
+            @RequestBody LoginRequest request
     ) {
-        String token = authService.login(
-                request.getEmail(),
-                request.getPassword()
+        return ResponseEntity.ok(
+                authService.login(
+                        request.getEmail(),
+                        request.getPassword()
+                )
         );
-
-        return ResponseEntity.ok(new LoginResponse(token));
     }
+
+
+    @PostMapping("/refresh")
+    public ResponseEntity<RefreshResponse> refresh(
+            @RequestBody RefreshRequest request
+    ) {
+        User user = refreshTokenService
+                .validateAndGetUser(request.getRefreshToken());
+
+        String newAccessToken = jwtUtil.generateToken(user.getEmail());
+
+        return ResponseEntity.ok(
+                new RefreshResponse(newAccessToken)
+        );
+    }
+
 
 }
